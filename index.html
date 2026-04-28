@@ -10,6 +10,7 @@
     <script src="https://yubinbango.github.io/yubinbango/yubinbango.js" charset="UTF-8"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
     <style>
@@ -6377,6 +6378,7 @@ function switchTab(idx) {
     if (idx === 10) ensureEmbeddedFrameLoaded('quotation-tool-frame');
     if (idx === 11) ensureEmbeddedFrameLoaded('fee-tool-frame');
     if (idx === 14) ensureEmbeddedFrameLoaded('label-tool-mobile-frame');
+    if (idx === 22) initShippingLabel();
     if (idx !== 9) {
         const panel = document.getElementById('timeis-panel');
         const btn = document.getElementById('timeis-toggle-btn');
@@ -14642,25 +14644,19 @@ function generateLabelPreview(){
 
 function generateQRCode(text){
     const qrContainer = document.getElementById('label-qrcode');
-    if(!qrContainer) return;
+    if(!qrContainer){
+        console.error('QR code container not found');
+        return;
+    }
     
     qrContainer.innerHTML = '';
     
-    if(typeof QRCode === 'undefined'){
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-        script.onload = () => {
-            new QRCode(qrContainer, {
-                text: text,
-                width: 80,
-                height: 80,
-                colorDark: '#000000',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.M
-            });
-        };
-        document.head.appendChild(script);
-    } else {
+    try {
+        if(typeof QRCode === 'undefined'){
+            console.error('QRCode library not loaded');
+            return;
+        }
+        
         new QRCode(qrContainer, {
             text: text,
             width: 80,
@@ -14669,6 +14665,9 @@ function generateQRCode(text){
             colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.M
         });
+        console.log('QRCode generated successfully');
+    } catch(e) {
+        console.error('Failed to generate QRCode:', e);
     }
 }
 
