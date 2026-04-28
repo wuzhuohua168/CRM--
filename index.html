@@ -14639,11 +14639,15 @@ function generateLabelPreview(){
             </div>
         </div>`;
     
-    generateQRCode(qrInfo);
+    setTimeout(() => {
+        generateQRCode(qrInfo);
+    }, 100);
 }
 
 function generateQRCode(text){
     const qrContainer = document.getElementById('label-qrcode');
+    console.log('Generating QR code, container:', qrContainer, 'text:', text);
+    
     if(!qrContainer){
         console.error('QR code container not found');
         return;
@@ -14651,13 +14655,28 @@ function generateQRCode(text){
     
     qrContainer.innerHTML = '';
     
+    if(typeof QRCode === 'undefined'){
+        console.error('QRCode library not loaded, trying to reload...');
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+        script.onload = () => {
+            console.log('QRCode library reloaded');
+            createQRCode(qrContainer, text);
+        };
+        script.onerror = () => {
+            console.error('Failed to reload QRCode library');
+            qrContainer.innerHTML = '<div style="color:red;font-size:10px;">二维码加载失败</div>';
+        };
+        document.head.appendChild(script);
+    } else {
+        createQRCode(qrContainer, text);
+    }
+}
+
+function createQRCode(container, text){
     try {
-        if(typeof QRCode === 'undefined'){
-            console.error('QRCode library not loaded');
-            return;
-        }
-        
-        new QRCode(qrContainer, {
+        console.log('Creating QR code with text:', text);
+        new QRCode(container, {
             text: text,
             width: 80,
             height: 80,
@@ -14665,9 +14684,10 @@ function generateQRCode(text){
             colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.M
         });
-        console.log('QRCode generated successfully');
+        console.log('QRCode created successfully');
     } catch(e) {
-        console.error('Failed to generate QRCode:', e);
+        console.error('Failed to create QRCode:', e);
+        container.innerHTML = '<div style="color:red;font-size:10px;">二维码生成失败</div>';
     }
 }
 
