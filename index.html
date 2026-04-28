@@ -14655,40 +14655,50 @@ function generateQRCode(text){
     
     qrContainer.innerHTML = '';
     
-    if(typeof QRCode === 'undefined'){
-        console.error('QRCode library not loaded, trying to reload...');
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-        script.onload = () => {
-            console.log('QRCode library reloaded');
-            createQRCode(qrContainer, text);
-        };
-        script.onerror = () => {
-            console.error('Failed to reload QRCode library');
-            qrContainer.innerHTML = '<div style="color:red;font-size:10px;">二维码加载失败</div>';
-        };
-        document.head.appendChild(script);
-    } else {
-        createQRCode(qrContainer, text);
+    try {
+        if(typeof QRCode === 'undefined'){
+            console.error('QRCode library not loaded');
+            qrContainer.innerHTML = '<div style="color:red;font-size:10px;">QRCode库未加载</div>';
+            return;
+        }
+        
+        console.log('QRCode library available, creating QR code...');
+        
+        const qrDiv = document.createElement('div');
+        new QRCode(qrDiv, {
+            text: text,
+            width: 80,
+            height: 80,
+            correctLevel: QRCode.CorrectLevel.M
+        });
+        
+        setTimeout(() => {
+            console.log('Checking for QR image...');
+            const qrImg = qrDiv.querySelector('img');
+            const qrCanvas = qrDiv.querySelector('canvas');
+            
+            console.log('QR image:', qrImg);
+            console.log('QR canvas:', qrCanvas);
+            
+            if(qrImg){
+                qrContainer.appendChild(qrImg);
+                console.log('QRCode image added successfully');
+            } else if(qrCanvas){
+                qrContainer.appendChild(qrCanvas);
+                console.log('QRCode canvas added successfully');
+            } else {
+                console.error('No QR element found');
+                qrContainer.innerHTML = '<div style="color:red;font-size:10px;">二维码生成失败</div>';
+            }
+        }, 100);
+    } catch(e) {
+        console.error('Failed to create QRCode:', e);
+        qrContainer.innerHTML = '<div style="color:red;font-size:10px;">二维码生成失败: ' + e.message + '</div>';
     }
 }
 
 function createQRCode(container, text){
-    try {
-        console.log('Creating QR code with text:', text);
-        new QRCode(container, {
-            text: text,
-            width: 80,
-            height: 80,
-            colorDark: '#000000',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.M
-        });
-        console.log('QRCode created successfully');
-    } catch(e) {
-        console.error('Failed to create QRCode:', e);
-        container.innerHTML = '<div style="color:red;font-size:10px;">二维码生成失败</div>';
-    }
+    generateQRCode(text);
 }
 
 function exportLabelToPDF(){
