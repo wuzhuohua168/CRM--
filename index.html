@@ -14499,7 +14499,7 @@ function loadOrderToLabel(){
     document.getElementById('label-receiver-phone').value = order.consigneephone || '';
     document.getElementById('label-receiver-email').value = order.consigneeemail || '';
     
-    document.getElementById('label-tracking').value = order.tracking || order.mbl || order.hbl || '';
+    document.getElementById('label-tracking').value = order.orderNo || order.tracking || order.mbl || order.hbl || '';
     document.getElementById('label-goods').value = order.goods || order.cargoname || '';
     document.getElementById('label-weight').value = order.weight || order.grossweight || '';
     document.getElementById('label-pieces').value = order.pieces || order.pkgs || '1';
