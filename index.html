@@ -2559,7 +2559,13 @@
             <!-- 左侧：订单选择和输入 -->
             <div>
                 <div style="margin-bottom:15px;">
-                    <label style="font-size:12px; font-weight:bold; color:#666; display:block; margin-bottom:8px;">从CRM订单选择</label>
+                    <label style="font-size:12px; font-weight:bold; color:#666; display:block; margin-bottom:8px;">输入单号自动匹配</label>
+                    <input type="text" id="label-auto-search" placeholder="输入订单号/运单号/MBL/HBL自动匹配" oninput="autoMatchOrder()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:13px; background:#fff;">
+                    <div id="label-match-result" style="font-size:11px; color:#27ae60; margin-top:5px; display:none;"></div>
+                </div>
+                
+                <div style="margin-bottom:15px;">
+                    <label style="font-size:12px; font-weight:bold; color:#666; display:block; margin-bottom:8px;">或从CRM订单选择</label>
                     <select id="label-order-select" onchange="loadOrderToLabel()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:13px; background:#fff;">
                         <option value="">-- 选择订单或手动填写 --</option>
                     </select>
@@ -14408,6 +14414,67 @@ function initShippingLabel(){
     document.getElementById('label-date').value = new Date().toISOString().split('T')[0];
 }
 
+function autoMatchOrder(){
+    const searchText = document.getElementById('label-auto-search').value.trim().toLowerCase();
+    const resultDiv = document.getElementById('label-match-result');
+    
+    console.log('autoMatchOrder called, searchText:', searchText);
+    
+    if(!searchText){
+        resultDiv.style.display = 'none';
+        return;
+    }
+    
+    const orders = crmLoad();
+    console.log('Loaded orders:', orders.length, 'orders');
+    
+    if(orders.length === 0){
+        resultDiv.innerHTML = '✗ CRM中没有订单数据';
+        resultDiv.style.color = '#e74c3c';
+        resultDiv.style.display = 'block';
+        return;
+    }
+    
+    const matchedOrder = orders.find(order => {
+        const orderNo = (order.orderNo || '').toLowerCase();
+        const tracking = (order.tracking || '').toLowerCase();
+        const mbl = (order.mbl || '').toLowerCase();
+        const hbl = (order.hbl || '').toLowerCase();
+        const client = (order.client || '').toLowerCase();
+        const shipper = (order.shipper || '').toLowerCase();
+        const consignee = (order.consignee || '').toLowerCase();
+        
+        const matched = orderNo.includes(searchText) || 
+               tracking.includes(searchText) || 
+               mbl.includes(searchText) || 
+               hbl.includes(searchText) ||
+               client.includes(searchText) ||
+               shipper.includes(searchText) ||
+               consignee.includes(searchText);
+        
+        if(matched){
+            console.log('Matched order:', order);
+        }
+        
+        return matched;
+    });
+    
+    if(matchedOrder){
+        document.getElementById('label-order-select').value = matchedOrder.id;
+        loadOrderToLabel();
+        
+        const clientName = matchedOrder.client || matchedOrder.shipper || '未知客户';
+        const route = matchedOrder.route || (matchedOrder.pol && matchedOrder.pod ? matchedOrder.pol + '-' + matchedOrder.pod : '');
+        resultDiv.innerHTML = `✓ 已匹配: ${matchedOrder.orderNo || matchedOrder.id} - ${clientName} (${route})`;
+        resultDiv.style.color = '#27ae60';
+        resultDiv.style.display = 'block';
+    } else {
+        resultDiv.innerHTML = '✗ 未找到匹配的订单';
+        resultDiv.style.color = '#e74c3c';
+        resultDiv.style.display = 'block';
+    }
+}
+
 function loadOrderToLabel(){
     const select = document.getElementById('label-order-select');
     const orderId = select.value;
@@ -14569,12 +14636,10 @@ function generateLabelPreview(){
             </div>`;
     }
     
-    const qrInfo = `运单号: ${tracking}
-发件人: ${senderName}
-收件人: ${receiverName}
-货物: ${goods}
-重量: ${weight} kg
-件数: ${pieces}件`;
+    const qrTracking = tracking !== t.tracking ? tracking : '';
+    const qrUrl = qrTracking ? 
+        `https://tracking-ruby-seven.vercel.app/?no=${encodeURIComponent(qrTracking)}` : 
+        'https://tracking-ruby-seven.vercel.app/';
     
     preview.innerHTML = `
         <div style="font-family:Arial, sans-serif; font-size:11px; line-height:1.5;">
@@ -14635,12 +14700,12 @@ function generateLabelPreview(){
             
             <div style="text-align:center; margin-top:15px; padding-top:10px; border-top:1px dashed #ddd;">
                 <div id="label-qrcode" style="display:inline-block; margin-bottom:5px;"></div>
-                <div style="font-size:9px; color:#999;">扫描二维码获取面单信息</div>
+                <div style="font-size:9px; color:#999;">扫描二维码查询货物轨迹</div>
             </div>
         </div>`;
     
     setTimeout(() => {
-        generateQRCode(qrInfo);
+        generateQRCode(qrUrl);
     }, 100);
 }
 
